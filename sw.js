@@ -1,4 +1,4 @@
-const CACHE = 'rijian-v6';
+const CACHE = 'rijian-v7';
 
 const ASSETS = [
   './',
@@ -11,10 +11,25 @@ const ASSETS = [
   './icons/icon-512.png'
 ];
 
+/* 用 CACHE 名做查询参数逐个拉取，强制绕过 HTTP 缓存和 CDN 边缘缓存。
+   否则多个文件可能新旧混着存进同一个缓存桶，出现「新页面 + 旧脚本」的错乱。
+   存的时候仍用原始 URL，保证运行时 caches.match 能命中。 */
+async function precache() {
+  const cache = await caches.open(CACHE);
+  await Promise.all(ASSETS.map(async url => {
+    try {
+      const sep = url.includes('?') ? '&' : '?';
+      const resp = await fetch(url + sep + 'v=' + CACHE, { cache: 'reload' });
+      if (resp && resp.ok) await cache.put(url, resp);
+    } catch (err) {
+      /* 单个文件失败不影响其它文件 */
+    }
+  }));
+}
+
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE)
-      .then(c => c.addAll(ASSETS))
+    precache()
       .then(() => self.skipWaiting())
       .catch(() => self.skipWaiting())
   );

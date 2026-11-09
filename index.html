@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no,email=no,address=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="日笺">
+<meta name="theme-color" content="#faf9f6">
+<title>日笺</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ 锁屏 ============ -->
+<div id="lockScreen" class="lock-screen hidden">
+  <div class="lock-title" id="lockTitle">输入密码</div>
+  <div class="lock-sub" id="lockSub">请输入 4 位数字密码</div>
+  <div class="lock-dots" id="lockDots">
+    <span></span><span></span><span></span><span></span>
+  </div>
+  <div class="lock-err" id="lockErr"></div>
+  <div class="keypad" id="keypad">
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+    <button class="blank"></button>
+    <button data-k="0">0</button>
+    <button data-k="del" aria-label="删除">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="M17 9l-5 6M12 9l5 6"/>
+      </svg>
+    </button>
+  </div>
+  <button id="lockCancel" class="lock-cancel hidden">取消</button>
+</div>
+
+<!-- ============ 主应用 ============ -->
+<div id="app">
+
+  <!-- ---------- 首页 ---------- -->
+  <section id="view-home" class="view">
+    <div class="topbar">
+      <button class="icon-btn" id="menuBtn" aria-label="菜单">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M4 7h16M4 12h16M4 17h16"/>
+        </svg>
+      </button>
+      <div class="topbar-title" id="homeMonthLabel"></div>
+      <button class="icon-btn" id="newBtn" aria-label="新建">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M14.5 6.5l3 3"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="today-hero">
+      <div class="big-day" id="todayBig">--</div>
+      <div class="month-week" id="todaySub">--</div>
+      <div class="hero-rule"></div>
+    </div>
+
+    <div id="backupBar"></div>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+  <!-- ---------- 日历 ---------- -->
+  <section id="view-calendar" class="view hidden">
+    <div class="topbar">
+      <button class="icon-btn" data-back aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <div class="topbar-title">日历</div>
+      <div style="width:40px"></div>
+    </div>
+    <div class="cal-wrap">
+      <div class="cal-head">
+        <button id="calPrev" aria-label="上个月">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <span id="calTitle"></span>
+        <button id="calNext" aria-label="下个月">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div class="cal-week">
+        <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-day-title" id="calDayTitle"></div>
+      <div id="calDayList"></div>
+    </div>
+  </section>
+
+  <!-- ---------- 搜索 ---------- -->
+  <section id="view-search" class="view hidden">
+    <div class="topbar">
+      <button class="icon-btn" data-back aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <div class="topbar-title">搜索</div>
+      <div style="width:40px"></div>
+    </div>
+    <div class="search-bar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>
+      </svg>
+      <input id="searchInput" type="search" placeholder="搜索日记内容" autocomplete="off">
+    </div>
+    <div id="searchResults" style="flex:1;padding-bottom:40px;"></div>
+  </section>
+
+  <!-- ---------- 垃圾箱 ---------- -->
+  <section id="view-trash" class="view hidden">
+    <div class="topbar">
+      <button class="icon-btn" data-back aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <div class="topbar-title">垃圾箱</div>
+      <button class="icon-btn" id="emptyTrashBtn" aria-label="清空">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/>
+        </svg>
+      </button>
+    </div>
+    <div class="set-note" style="padding:0 24px 12px;">删除的日记会保留在这里，可随时恢复。彻底删除后无法找回。</div>
+    <div id="trashList" style="flex:1;padding-bottom:40px;"></div>
+  </section>
+
+  <!-- ---------- 设置 ---------- -->
+  <section id="view-settings" class="view hidden">
+    <div class="topbar">
+      <button class="icon-btn" data-back aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <div class="topbar-title">设置</div>
+      <div style="width:40px"></div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-group-title">安全</div>
+      <div class="set-item" id="setLock">
+        <span>密码锁</span>
+        <span class="val" id="lockState">未开启</span>
+      </div>
+      <div class="set-note">4 位数字密码。开启后每次打开都需要输入。</div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-group-title">数据</div>
+      <div class="set-item">
+        <span>永久存储</span>
+        <span class="val" id="persistState">检测中</span>
+      </div>
+      <div class="set-item">
+        <span>上次备份</span>
+        <span class="val" id="backupState">从未</span>
+      </div>
+      <div class="set-item" id="exportMd">
+        <span>导出为 Markdown</span>
+        <span class="val">›</span>
+      </div>
+      <div class="set-item" id="exportAll">
+        <span>导出完整备份</span>
+        <span class="val">›</span>
+      </div>
+      <div class="set-item" id="importAll">
+        <span>从备份恢复</span>
+        <span class="val">›</span>
+      </div>
+      <div class="set-note">导出的文件会保存到「文件」App，你可以再传到电脑长期保存。日记只存在这台手机上，不会上传任何服务器。</div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-group-title">统计</div>
+      <div class="set-item">
+        <span>总篇数</span>
+        <span class="val" id="statCount">0</span>
+      </div>
+      <div class="set-item">
+        <span>占用空间</span>
+        <span class="val" id="statSize">0 KB</span>
+      </div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-group-title">关于</div>
+      <div class="set-item">
+        <span>版本</span>
+        <span class="val">1.0</span>
+      </div>
+      <div class="set-note" style="padding-bottom:40px;">日笺 · 纯本地日记本。无账号、无网络请求、数据全部保存在本机。</div>
+    </div>
+  </section>
+
+  <!-- ---------- 编辑器 ---------- -->
+  <section id="view-editor" class="view view-editor hidden">
+    <div class="ed-head">
+      <button class="btn-text" id="edBack">返回</button>
+      <div style="display:flex;align-items:center;gap:2px">
+        <button class="icon-btn hidden" id="edDelete" aria-label="删除这篇" style="color:var(--danger)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/>
+          </svg>
+        </button>
+        <button class="btn-text primary" id="edSave">完成</button>
+      </div>
+    </div>
+
+    <div class="ed-dateblock">
+      <div class="ed-day" id="edDay">--</div>
+      <div class="ed-month" id="edMonth">--</div>
+      <div class="ed-rule"></div>
+      <div class="ed-year" id="edYear">--</div>
+      <div class="ed-stamp">
+        <div id="edTime">--:--</div>
+        <div id="edWeek">--</div>
+      </div>
+    </div>
+
+    <input class="ed-title-input" id="edTitle" type="text" placeholder="标题（可留空）" maxlength="60">
+
+    <div class="ed-body" id="edBody" contenteditable="true"
+         data-placeholder="写点什么..."></div>
+
+    <div class="ed-toolbar">
+      <button id="tbImage" aria-label="插入图片">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 16l-5-5-6 6"/>
+        </svg>
+        <span>图片</span>
+      </button>
+      <button id="tbBold" aria-label="加粗">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 5h6a4 4 0 0 1 0 8H7z"/><path d="M7 13h7a4 4 0 0 1 0 8H7z"/>
+        </svg>
+        <span>加粗</span>
+      </button>
+      <button id="tbItalic" aria-label="斜体">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 5h-5M14 19H9M14 5l-4 14"/>
+        </svg>
+        <span>斜体</span>
+      </button>
+      <button id="tbList" aria-label="列表">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>
+        </svg>
+        <span>列表</span>
+      </button>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ 抽屉 ============ -->
+<div id="drawerMask" class="drawer-mask"></div>
+<aside id="drawer" class="drawer">
+  <div class="drawer-brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17v3z"/>
+    </svg>
+    日笺
+  </div>
+  <button class="drawer-new" id="drawerNew">＋ 新建日记</button>
+  <nav class="drawer-nav">
+    <div class="drawer-item current" data-target="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h14M5 12h14M5 18h9"/></svg>
+      全部日记
+    </div>
+    <div class="drawer-item" data-target="calendar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 9h16M9 3v4M15 3v4"/></svg>
+      日历
+    </div>
+    <div class="drawer-item" data-target="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+      搜索
+    </div>
+    <div class="drawer-sep"></div>
+    <div class="drawer-item" data-target="trash">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>
+      垃圾箱
+    </div>
+    <div class="drawer-item" data-target="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.9 19a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 5 8.9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      设置
+    </div>
+  </nav>
+</aside>
+
+<!-- ============ Toast / 弹窗容器 ============ -->
+<div id="toast" class="toast"></div>
+<div id="sheetHost"></div>
+
+<input type="file" id="imagePicker" accept="image/*" style="display:none">
+<input type="file" id="importPicker" accept="application/json,.json" style="display:none">
+
+<script src="app.js"></script>
+</body>
+</html>

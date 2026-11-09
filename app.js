@@ -198,6 +198,8 @@ const Store = {
 
 /* ---------------- 全局状态 ---------------- */
 
+const APP_VERSION = '1.1';
+
 const state = {
   entries: [],
   currentView: 'home',
@@ -1073,6 +1075,7 @@ $('#emptyTrashBtn').onclick = () => {
    ========================================================= */
 
 async function renderSettings() {
+  $('#appVersion').textContent = APP_VERSION;
   $('#lockState').textContent = state.pin ? '已开启' : '未开启';
   $('#lockState').className = 'val' + (state.pin ? ' ok' : '');
 
@@ -1142,6 +1145,95 @@ $('#setLock').onclick = () => {
     });
   }
 };
+
+/* ---------------- 检查更新 ---------------- */
+
+function compareVersion(a, b) {
+  const pa = String(a).split('.').map(Number);
+  const pb = String(b).split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || 0;
+    const y = pb[i] || 0;
+    if (x > y) return 1;
+    if (x < y) return -1;
+  }
+  return 0;
+}
+
+async function fetchRemoteVersion() {
+  // 加时间戳参数，绕过 Service Worker 和 HTTP 缓存
+  const res = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const j = await res.json();
+  return String(j.version || '').trim();
+}
+
+async function checkUpdate() {
+  const el = $('#updateState');
+
+  if (!navigator.onLine) {
+    el.textContent = '需要联网';
+    el.className = 'val warn';
+    showToast('现在没联网，连上再检查');
+    return;
+  }
+
+  el.textContent = '检查中…';
+  el.className = 'val';
+
+  let remote = '';
+  try {
+    remote = await fetchRemoteVersion();
+  } catch (e) {
+    el.textContent = '检查失败';
+    el.className = 'val warn';
+    showToast('检查失败，稍后再试');
+    return;
+  }
+
+  if (!remote) {
+    el.textContent = '检查失败';
+    el.className = 'val warn';
+    return;
+  }
+
+  if (compareVersion(remote, APP_VERSION) > 0) {
+    el.textContent = '有新版 ' + remote;
+    el.className = 'val warn';
+    showSheet({
+      title: `发现新版本 ${remote}，当前是 ${APP_VERSION}。更新会重新加载页面，日记数据不受影响。`,
+      items: [
+        { label: '立即更新', onClick: applyUpdate },
+        { label: '以后再说', cancel: true, onClick: () => {} }
+      ]
+    });
+  } else {
+    el.textContent = '已是最新';
+    el.className = 'val ok';
+    showToast('已是最新版本 ' + APP_VERSION);
+  }
+}
+
+async function applyUpdate() {
+  if (!navigator.onLine) {
+    showToast('需要联网才能更新');
+    return;
+  }
+  showToast('正在更新，稍等…', 4000);
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const r of regs) { try { await r.unregister(); } catch (e) {} }
+    }
+    if (window.caches && caches.keys) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k).catch(() => {})));
+    }
+  } catch (e) {}
+  setTimeout(() => location.reload(), 450);
+}
+
+$('#checkUpdate').onclick = checkUpdate;
 
 /* =========================================================
    导出 / 导入

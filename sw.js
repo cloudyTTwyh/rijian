@@ -1,4 +1,4 @@
-const CACHE = 'rijian-v5';
+const CACHE = 'rijian-v6';
 
 const ASSETS = [
   './',
@@ -34,6 +34,12 @@ self.addEventListener('fetch', e => {
   let url;
   try { url = new URL(e.request.url); } catch (err) { return; }
   if (url.origin !== location.origin) return;
+
+  // 版本文件必须走网络，不能命中缓存，否则永远检查不到新版
+  if (url.pathname.endsWith('version.json')) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
 
   e.respondWith(
     caches.match(e.request).then(cached => {
